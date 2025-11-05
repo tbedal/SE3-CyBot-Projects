@@ -1,6 +1,12 @@
 /**
  * main.c
- */
+ * 
+ * The main file.
+ *
+ * @date November 5, 2025
+ * @author Thiago Bedal
+ * @author Joseph Vesterby
+**/
 
 #include "ping.h"
 #include "Timer.h"

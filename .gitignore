@@ -54,3 +54,7 @@ dvt/
 # Ignore launch configuration files
 **/*.launch
 **/.launches
+
+# Ignore TivaWare dependencies (may need to remove later)
+tm4c123gh6pm.cmd
+tm4c123gh6pm_startup_ccs.c

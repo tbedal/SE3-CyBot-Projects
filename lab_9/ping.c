@@ -1,9 +1,12 @@
-/*
- * ping.c
+/**
+ * uart.c
  *
- *  Created on: Oct 29, 2025
- *      Author: thbedal
- */
+ * Contains functions to operate the PING)) ultrasonic sensory on the CyBot.
+ * 
+ * @date November 5, 2025
+ * @author Thiago Bedal
+ * @author Joseph Vesterby
+**/
 
 // 0b0000'0000'0000'0000'0000'0000'0000'0000
 // 0b1111'1111'1111'1111'1111'1111'1111'1111
