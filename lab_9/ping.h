@@ -20,7 +20,7 @@
 // Sets registers necessary for operating ultrasonic sensor
 void ping_init(void);
 
-// TODO: comment me!
+// Sends out 5 us pulse and times length of pulse in to calculate distance from sensor in cm
 double ping_read(void);
 
 #endif /* PING_H_ */
