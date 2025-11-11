@@ -44,26 +44,26 @@ void servo_init(void) {
     SYSCTL_RCGCTIMER_R |= 0b0010; // Timer 1
 
     // DISABLE TIMERS FOR CONFIG
-    TIMER1_CTL_R &= ~0b0001'0000'0000; // Disable Timer 1
+    TIMER1_CTL_R &= ~0b0001'0000'0000;
 
-    // TODO: comment me!
+    // CONFIG OUTPUT STATE OF OF PWM SIGNAL
     TIMER1_CFG_R &= ~0x3;
-    TIMER1_CFG_R |= 0x4; // Set Timer 1 to 16-bit mode
+    TIMER1_CFG_R |=  0x4; // Set Timer 1 to 16-bit mode
 
-    // TODO: comment me!
-    TIMER1_TBMR_R &= ~0b0000'0001'0101; //
-    TIMER1_TBMR_R |=  0b0000'0000'1010; // Set timer mode
+    // CONFIG TIMER TO PWM MODE
+    TIMER1_TBMR_R &= ~0b0000'0001'0101; 
+    TIMER1_TBMR_R |=  0b0000'0000'1010;
 
-    // TODO: comment me!
-    TIMER1_CTL_R &= ~0b0100'0000'0000'0000; // Turn off PWM inversion
+    // DISABLE INVERSION
+    TIMER1_CTL_R &= ~0b0100'0000'0000'0000;
 
-    // TODO: comment me!
+    // LOAD INTERVAL VALUES
     TIMER1_TBPR_R &= ~0xFF;
     TIMER1_TBPR_R |=  0x04; // Extend to 24 bit timer
     TIMER1_TBILR_R &= ~0xFFFF;
     TIMER1_TBILR_R |=  0xE200;
 
-    // TODO: comment me!
+    // LOAD MATCH VALUES
     // FIXME: Servo keeps breaking its back because match value is wrong
     TIMER1_TBMATCHR_R &= ~0xFFFF;
     TIMER1_TBMATCHR_R |=  0xE1E6;
@@ -71,7 +71,7 @@ void servo_init(void) {
     TIMER1_TBPMR_R |=  0x04;
 
     // RE-ENABLE TIMER POST-CONFIG
-    TIMER1_CTL_R |= 0b0001'0000'0000; // Enable Timer 1
+    TIMER1_CTL_R |= 0b0001'0000'0000; // Timer 1
 }
 
 void servo_move(float degrees) {
