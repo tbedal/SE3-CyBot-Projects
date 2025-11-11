@@ -17,6 +17,7 @@
 /* <----------| DEFINES |----------> */
 
 #define BUTTON_DELAY_MICROS 50 // Magic value for faux "button debouncing" implemented in servo_callibrate()
+#define SERVO_DELAY_MILLIS 100
 
 volatile int button_num;
 
@@ -81,7 +82,7 @@ void servo_init(void) {
 }
 
 void servo_callibrate() {
-    uint32_t callibrationValue = TIMER1_TBMATCHR_R;
+    uint16_t callibrationValue = TIMER1_TBMATCHR_R;
 
     // Keep reading button state until user presses SW2
     // TODO: implement updating of servo callibration MATCHR values
@@ -103,5 +104,9 @@ void servo_callibrate() {
 }
 
 void servo_move(float degrees) {
-    return -1.0;
+    uint16_t requestedMatchValue = (int)(((servo_rightBound - servo_leftBound) * degrees) / 180 + servo_leftBound);
+    TIMER1_TBMATCHR_R |= requestedMatchValue;
+    TIMER1_TBMATCHR_R &= 0xFFFF0000 + requestedMatchValue;
+
+    timer_waitMillis(SERVO_DELAY_MILLIS);
 }

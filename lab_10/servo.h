@@ -18,7 +18,7 @@
 #include "Timer.h"
 
 // TODO: settle on naming convention for library global variable names
-uint32_t servo_rightBound, servo_leftBound;
+extern uint16_t servo_rightBound, servo_leftBound;
 
 // Sets registers necessary for operating ultrasonic sensor
 void servo_init(void);
