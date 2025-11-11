@@ -11,8 +11,14 @@
 /* <----------| INCLUDES |----------> */
 
 #include "servo.h"
+#include "button.h"
+#include "lcd.h"
 
 /* <----------| DEFINES |----------> */
+
+#define BUTTON_DELAY_MICROS 50 // Magic value for faux "button debouncing" implemented in servo_callibrate()
+
+volatile int button_num;
 
 /* <----------| IMPLEMENTATIONS |----------> */
 
@@ -66,12 +72,34 @@ void servo_init(void) {
     // LOAD MATCH VALUES
     // FIXME: Servo keeps breaking its back because match value is wrong
     TIMER1_TBMATCHR_R &= ~0xFFFF;
-    TIMER1_TBMATCHR_R |=  0xE1E6;
+    TIMER1_TBMATCHR_R |=  0xA1E6;
     TIMER1_TBPMR_R &= ~0xFF;
     TIMER1_TBPMR_R |=  0x04;
 
     // RE-ENABLE TIMER POST-CONFIG
     TIMER1_CTL_R |= 0b0001'0000'0000; // Timer 1
+}
+
+void servo_callibrate() {
+    uint32_t callibrationValue = TIMER1_TBMATCHR_R;
+
+    // Keep reading button state until user presses SW2
+    // TODO: implement updating of servo callibration MATCHR values
+    while (button_num != 2) {
+        if (button_num == 1) {
+            TIMER1_TBMATCHR_R++ ;
+            callibrationValue = TIMER1_TBMATCHR_R;
+        }
+        else if (button_num == 4) {
+            TIMER1_TBMATCHR_R--;
+            callibrationValue = TIMER1_TBMATCHR_R;
+        }
+
+        timer_waitMicros(BUTTON_DELAY_MICROS); // This feels like bad practice, but the efficiency loss here is minimal and it works as good as debouncing
+    }
+
+    // Update selected match value to LCD
+    lcd_printf("CAL_VAL: %u", callibrationValue);
 }
 
 void servo_move(float degrees) {
