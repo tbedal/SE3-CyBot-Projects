@@ -33,18 +33,22 @@ int main(void)
     lcd_init();
 
     // Initiate servo callibration
-    servo_callibrate();
+//    servo_callibrate();
 
+//    servo_move(90.0);
+//    timer_waitMillis(1000);
 
 //    float angle = 0.0;
 //    for (angle = 0.0; angle < 180.0; angle += 2.0) {
 //        servo_move(angle);
 //    }
 
-    while (1) {
-        servo_move(0.0);
-        servo_move(180.0);
-    }
+//    while (1) {
+//        servo_move(0.0);
+//        servo_move(180.0);
+//    }
+
+
 
 	return 0;
 }

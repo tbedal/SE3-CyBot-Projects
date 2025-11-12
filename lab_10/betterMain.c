@@ -105,6 +105,10 @@ uint8_t mean(uint8_t values[], uint8_t length);
 // Shifts all items to the left, remove first item, and appends newValue to length-1 index
 void updateBuffer(uint8_t buffer[], uint8_t length, uint8_t newValue);
 
+
+
+scanVector scanAngle (uint8_t angle);
+
 /* <----------| IMPLEMENTATIONS |----------> */
 
 uint8_t main(void)
@@ -125,12 +129,10 @@ uint8_t main(void)
     adc_init();
     uart_init(BAUD_RATE);
 
-    ping_init();
+    ping_init_OURS();
 
-    servo_init();
+    servo_init_OURS();
 
-    servo_rightBound = 50128;
-    servo_leftBound = 23781;
 
     // Uncomment and run to find cybot servo callibration values
 //    button_init();
@@ -138,6 +140,14 @@ uint8_t main(void)
 //    lcd_init();
 //
 //    servo_callibrate();
+//    servo_callibrate();
+
+
+    // BOT 23
+    servo_rightBound = 49295;
+    servo_leftBound = 21764;
+
+
 
     // Update putty once serial connection is successful
     uart_sendStr("Serial connection established.\r\n");
@@ -163,7 +173,7 @@ uint8_t main(void)
         smallestObjectAngle = findSmallestObject(measuredVectors, NUM_SCANS);
 
         // Point, turn, and drive to smallest object found
-        cyBOT_Scan(smallestObjectAngle, &scanValues);
+        servo_move_OURS(smallestObjectAngle);
         smallestObjectDistance = (double)measuredVectors[smallestObjectAngle / SCAN_INCREMENT].pingDistance;
 
         // Notify client of scan results
@@ -216,7 +226,21 @@ uint8_t main(void)
 }
 
 
-scanVector 
+scanVector scanAngle (uint8_t angle) {
+    scanVector returnedVector;
+
+    servo_move_OURS((float)angle);
+
+    returnedVector.angle = angle;
+
+    uint8_t usDistanceRaw = (uint8_t)ping_read();
+
+    returnedVector.pingDistance = usDistanceRaw > 250.0 ? (uint8_t)(250) : (uint8_t)(usDistanceRaw);
+    returnedVector.irDistance = adc_calculateIRDistance(adc_read());
+
+
+    return returnedVector;
+}
 
 
 void printScanData(scanVector vectors[], uint8_t numVectors) {
@@ -238,16 +262,13 @@ void printScanData(scanVector vectors[], uint8_t numVectors) {
 void scanField(uint8_t startAngle, uint8_t endAngle, uint8_t incrementAngle, cyBOT_Scan_t scanner, scanVector vectors[]) {
     uint8_t index = 0;
     uint8_t angle = startAngle;
-    scanVector measurement;
+//    scanVector measurement;
 
     // Iterate through each angle in array (Chopped For loop)
     while (angle <= endAngle) {
         // Poll sensor and add value to array
-        cyBOT_Scan(angle, &scanner);
-        measurement.angle = angle;
-        measurement.pingDistance = scanner.sound_dist > 250.0 ? (uint8_t)(250) : (uint8_t)(scanner.sound_dist);
-        measurement.irDistance = adc_calculateIRDistance(adc_read());
-        vectors[index] = measurement;
+
+        vectors[index] = scanAngle(angle);
 
         index += 1;
         angle += incrementAngle;

@@ -24,7 +24,7 @@ static void ping_timerHandler(void);
 
 /* <----------| IMPLEMENTATIONS |----------> */
 
-void ping_init(void) {
+void ping_init_OURS(void) {
     // TOOD: comment me!
 
     /* <----------| INIT GPIO |----------> */

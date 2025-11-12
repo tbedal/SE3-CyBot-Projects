@@ -23,7 +23,7 @@ volatile int button_num;
 
 /* <----------| IMPLEMENTATIONS |----------> */
 
-void servo_init(void) {
+void servo_init_OURS(void) {
     // TOOD: comment me!
 
     /* <----------| INIT GPIO |----------> */
@@ -103,7 +103,7 @@ void servo_callibrate() {
     lcd_printf("CAL_VAL: %u", callibrationValue);
 }
 
-void servo_move(float degrees) {
+void servo_move_OURS(float degrees) {
     uint16_t requestedMatchValue = (int)(((servo_rightBound - servo_leftBound) * degrees) / 180 + servo_leftBound);
     TIMER1_TBMATCHR_R |= requestedMatchValue;
     TIMER1_TBMATCHR_R &= 0xFFFF0000 + requestedMatchValue;
