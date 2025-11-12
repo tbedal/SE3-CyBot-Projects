@@ -10,7 +10,6 @@
 
 /* <----------| INCLUDES |----------> */
 
-#include "cyBot_Scan.h"
 #include "adc.h"
 #include "uart.h"
 #include "lcd.h"
@@ -19,9 +18,7 @@
 #include "open_interface.h"
 #include "movement.h"
 #include "bot_callibration.h"
-
 #include "ping.h"
-
 #include "servo.h"
 #include "button.h"
 
@@ -75,15 +72,15 @@ uint16_t servo_leftBound;
 void printScanData(scanVector vectors[], uint8_t numVectors);
 
 // Execute a certain movement action on the cybot based on user input
-int executeBotCommand(oi_t* sensor, cyBOT_Scan_t scanner, scanVector vectors[], char input);
+int executeBotCommand(oi_t* sensor, scanVector vectors[], char input);
 
 // Sets bot into manual mode and until user exits
-void engageManualMode(oi_t* sensor, cyBOT_Scan_t scanner, scanVector vectors[]);
+void engageManualMode(oi_t* sensor, scanVector vectors[]);
 
 /* <----------| FIELD SCANNING METHODS |----------> */
 
 // Perform ultrasonic scan of field from startAngle to endAngle in incrementAngle increments, storing values in vectors array
-void scanField(uint8_t startAngle, uint8_t endAngle, uint8_t incrementAngle, cyBOT_Scan_t scanner, scanVector vectors[]);
+void scanField(uint8_t startAngle, uint8_t endAngle, uint8_t incrementAngle, scanVector vectors[]);
 
 // Filters noise in data by averaging values across a rolling average buffer. Generates new array, buffer-by-buffer
 void rollingAverageFilter(scanVector vectors[], uint8_t numValues, uint8_t bufferSize);
@@ -105,8 +102,7 @@ uint8_t mean(uint8_t values[], uint8_t length);
 // Shifts all items to the left, remove first item, and appends newValue to length-1 index
 void updateBuffer(uint8_t buffer[], uint8_t length, uint8_t newValue);
 
-
-
+// TODO: comment me!
 scanVector scanAngle (uint8_t angle);
 
 /* <----------| IMPLEMENTATIONS |----------> */
@@ -115,7 +111,6 @@ uint8_t main(void)
 {
     // Declare variables
     oi_t *sensor_data = oi_alloc();
-    cyBOT_Scan_t scanValues;
     scanVector measuredVectors[NUM_SCANS];
     char puttyMessage[MAX_MESSAGE_LEN];
     char inputChar = 0;
@@ -128,26 +123,18 @@ uint8_t main(void)
     timer_init();
     adc_init();
     uart_init(BAUD_RATE);
-
-    ping_init_OURS();
-
-    servo_init_OURS();
-
-
-    // Uncomment and run to find cybot servo callibration values
-//    button_init();
-//    init_button_interrupts();
-//    lcd_init();
-//
-//    servo_callibrate();
-//    servo_callibrate();
-
-
-    // BOT 23
+    ping_init();
+    servo_init();
     servo_rightBound = 49295;
     servo_leftBound = 21764;
 
 
+    // Uncomment and run to find cybot servo callibration values:
+    /*button_init();
+    init_button_interrupts();
+    lcd_init();
+    servo_callibrate();
+    servo_callibrate();*/
 
     // Update putty once serial connection is successful
     uart_sendStr("Serial connection established.\r\n");
@@ -156,24 +143,24 @@ uint8_t main(void)
     while (1) {
         /* <----------| STEP 0: WAIT FOR USER COMMAND |----------> */
 
-        // FIXME: we should definitely be using interrupts here...
+        // FIXME: GUI gets mad after faulty instructions
         do { inputChar = uart_getChar(); } while (inputChar != 't' && inputChar != 'h');
         if (inputChar == 't') {
-            engageManualMode(sensor_data, scanValues, measuredVectors);
+            engageManualMode(sensor_data, measuredVectors);
             continue;
         }
 
         /* <----------| STEP 1: SCAN FIELD |----------> */
 
         // Perform scan across field and print raw distances and filter noise with rolling average
-        scanField(SCAN_START, SCAN_END, SCAN_INCREMENT, scanValues, measuredVectors);
+        scanField(SCAN_START, SCAN_END, SCAN_INCREMENT, measuredVectors);
         rollingAverageFilter(measuredVectors, NUM_SCANS, BUFFER_SIZE);
 
         // Find smallest object in filtered data
         smallestObjectAngle = findSmallestObject(measuredVectors, NUM_SCANS);
 
         // Point, turn, and drive to smallest object found
-        servo_move_OURS(smallestObjectAngle);
+        servo_move(smallestObjectAngle);
         smallestObjectDistance = (double)measuredVectors[smallestObjectAngle / SCAN_INCREMENT].pingDistance;
 
         // Notify client of scan results
@@ -184,7 +171,7 @@ uint8_t main(void)
 
         do { inputChar = uart_getChar(); } while (inputChar != 't' && inputChar != 'h');
         if (inputChar == 't') {
-            engageManualMode(sensor_data, scanValues, measuredVectors);
+            engageManualMode(sensor_data, measuredVectors);
             continue;
         }
 
@@ -212,7 +199,7 @@ uint8_t main(void)
 
         do { inputChar = uart_getChar(); } while (inputChar != 't' && inputChar != 'h');
         if (inputChar == 't') {
-            engageManualMode(sensor_data, scanValues, measuredVectors);
+            engageManualMode(sensor_data, measuredVectors);
             continue;
         }
 
@@ -225,23 +212,22 @@ uint8_t main(void)
     }
 }
 
-
-scanVector scanAngle (uint8_t angle) {
+scanVector scanAngle(uint8_t angle) {
     scanVector returnedVector;
 
-    servo_move_OURS((float)angle);
-
+    // Move servo to input angle and store in degrees
+    servo_move((float)angle);
     returnedVector.angle = angle;
 
-    uint8_t usDistanceRaw = (uint8_t)ping_read();
+    // Scan and store ultrasound in centimeters (capped at 250cm)
+    uint8_t pingDistanceRaw = (uint8_t)ping_read();
+    returnedVector.pingDistance = pingDistanceRaw > 250.0 ? (uint8_t)(250) : (uint8_t)(pingDistanceRaw);
 
-    returnedVector.pingDistance = usDistanceRaw > 250.0 ? (uint8_t)(250) : (uint8_t)(usDistanceRaw);
+    // Scan and store converted IR data in centimeters
     returnedVector.irDistance = adc_calculateIRDistance(adc_read());
-
 
     return returnedVector;
 }
-
 
 void printScanData(scanVector vectors[], uint8_t numVectors) {
     char output[MAX_MESSAGE_LEN];
@@ -259,15 +245,13 @@ void printScanData(scanVector vectors[], uint8_t numVectors) {
     uart_sendStr("END\n");
 }
 
-void scanField(uint8_t startAngle, uint8_t endAngle, uint8_t incrementAngle, cyBOT_Scan_t scanner, scanVector vectors[]) {
+void scanField(uint8_t startAngle, uint8_t endAngle, uint8_t incrementAngle, scanVector vectors[]) {
     uint8_t index = 0;
     uint8_t angle = startAngle;
-//    scanVector measurement;
 
     // Iterate through each angle in array (Chopped For loop)
     while (angle <= endAngle) {
         // Poll sensor and add value to array
-
         vectors[index] = scanAngle(angle);
 
         index += 1;
@@ -320,8 +304,7 @@ void rollingAverageFilter(scanVector vectors[], uint8_t numValues, uint8_t buffe
     }
 }
 
-
-// TODO: Make it not store US data when it doesn't USE it
+// TODO: Make it not store PING data when it doesn't USE it
 uint8_t findSmallestObject(scanVector vectors[], uint8_t numValues) {
     uint8_t index = 0;
 
@@ -372,7 +355,7 @@ uint8_t calculateObjectWidth(uint8_t medianDistance, uint8_t startAngle, uint8_t
     return sqrt(((pow(medianDistance, 2)) * 2) * (1 - cos(((endAngle - startAngle) / 180.0) * M_PI)));
 }
 
-int executeBotCommand(oi_t* sensor, cyBOT_Scan_t scanner, scanVector vectors[], char input) {
+int executeBotCommand(oi_t* sensor, scanVector vectors[], char input) {
     oi_update(sensor);
 
     // Convert input character into command for bot to execute
@@ -381,7 +364,7 @@ int executeBotCommand(oi_t* sensor, cyBOT_Scan_t scanner, scanVector vectors[], 
         case 's': bot_drive(-BOT_MAX_SPEED); break;
         case 'a': bot_turn(BOT_TURN_SPEED); break;
         case 'd': bot_turn(-BOT_TURN_SPEED); break;
-        case 'm': scanField(SCAN_START, SCAN_END, SCAN_INCREMENT, scanner, vectors); printScanData(vectors, NUM_SCANS); break;
+        case 'm': scanField(SCAN_START, SCAN_END, SCAN_INCREMENT, vectors); printScanData(vectors, NUM_SCANS); break;
         case ' ': bot_stopWheels(); break;
         case '3': bot_driveSquare(sensor); break;
         case '4': bot_driveObstacles(sensor, 200); break;
@@ -399,7 +382,7 @@ int executeBotCommand(oi_t* sensor, cyBOT_Scan_t scanner, scanVector vectors[], 
     return 1;
 }
 
-void engageManualMode(oi_t* sensor, cyBOT_Scan_t scanner, scanVector vectors[]) {
+void engageManualMode(oi_t* sensor, scanVector vectors[]) {
     char input = 0;
     char output[MAX_MESSAGE_LEN];
 
@@ -418,7 +401,7 @@ void engageManualMode(oi_t* sensor, cyBOT_Scan_t scanner, scanVector vectors[]) 
             break;
         }
 
-        executeBotCommand(sensor, scanner, vectors, input);
+        executeBotCommand(sensor, vectors, input);
     }
 
     return;

@@ -16,14 +16,14 @@
 
 /* <----------| DEFINES |----------> */
 
-#define BUTTON_DELAY_MICROS 50 // Magic value for faux "button debouncing" implemented in servo_callibrate()
+#define BUTTON_DELAY_MICROS 500 // Magic value for faux "button debouncing" implemented in servo_callibrate()
 #define SERVO_DELAY_MILLIS 100
 
 volatile int button_num;
 
 /* <----------| IMPLEMENTATIONS |----------> */
 
-void servo_init_OURS(void) {
+void servo_init(void) {
     // TOOD: comment me!
 
     /* <----------| INIT GPIO |----------> */
@@ -85,7 +85,6 @@ void servo_callibrate() {
     uint16_t callibrationValue = TIMER1_TBMATCHR_R;
 
     // Keep reading button state until user presses SW2
-    // TODO: implement updating of servo callibration MATCHR values
     while (button_num != 2) {
         if (button_num == 1) {
             TIMER1_TBMATCHR_R++ ;
@@ -103,10 +102,33 @@ void servo_callibrate() {
     lcd_printf("CAL_VAL: %u", callibrationValue);
 }
 
-void servo_move_OURS(float degrees) {
+void servo_move(float degrees) {
     uint16_t requestedMatchValue = (int)(((servo_rightBound - servo_leftBound) * degrees) / 180 + servo_leftBound);
     TIMER1_TBMATCHR_R |= requestedMatchValue;
     TIMER1_TBMATCHR_R &= 0xFFFF0000 + requestedMatchValue;
 
     timer_waitMillis(SERVO_DELAY_MILLIS);
+}
+
+void servo_demo(void) {
+    int8_t userWantsClockwise = 1;
+    uint8_t degrees;
+
+    // Keep reading button state until user presses SW2
+    while (1) {
+        degrees = (TIMER1_TBMATCHR_R - servo_leftBound) * 180 / (servo_rightBound - servo_leftBound);
+
+        switch (button_num) {
+            case 1: servo_move(degrees + (userWantsClockwise)); break;
+            case 2: servo_move(degrees + (5 * userWantsClockwise)); break;
+            case 3: userWantsClockwise *= -1; break;
+            case 4: servo_move((userWantsClockwise == 1 ? 0 : 180)); break;
+        }
+
+        timer_waitMicros(BUTTON_DELAY_MICROS);
+
+        // Update selected match value to LCD
+        lcd_printf("CAL_VAL: %u\nDEG: %u\n%d", TIMER1_TBMATCHR_R, degrees, userWantsClockwise);
+    }
+
 }

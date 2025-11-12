@@ -21,12 +21,15 @@
 extern uint16_t servo_rightBound, servo_leftBound;
 
 // Sets registers necessary for operating ultrasonic sensor
-void servo_init_OURS(void);
+void servo_init(void);
 
 // Initiates callibration mode for servo to find right/left match values
 void servo_callibrate();
 
 // Sends out 5 us pulse and times length of pulse in to calculate distance from sensor in cm
-void servo_move_OURS(float degrees);
+void servo_move(float degrees);
+
+// Demo code for Lab 10 Part 2
+void servo_demo(void);
 
 #endif /* SERVO_H_ */

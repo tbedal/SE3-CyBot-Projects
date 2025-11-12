@@ -18,7 +18,7 @@
 #include "Timer.h"
 
 // Sets registers necessary for operating ultrasonic sensor
-void ping_init_OURS(void);
+void ping_init(void);
 
 // Sends out 5 us pulse and times length of pulse in to calculate distance from sensor in cm
 double ping_read(void);
