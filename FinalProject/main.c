@@ -40,13 +40,18 @@ typedef struct gridPointFullData {
 // TODO: Comment me!
 void wrapAroundDegrees(int16_t* degrees);
 // TODO: Comment me!
-void updateCyBotPosition(gridPointFull* currentPostionFull, uint8_t traveledDistance, int16_t traveledDegrees);
+void updateCyBotPosition(gridPointFull* currentPostionFull, uint16_t traveledDistance, int16_t traveledDegrees);
 // TODO: Comment me!
-gridPoint findTableLocation(gridPointFull* currentPostionFull, uint8_t tableDistance, int16_t tableDegrees);
+gridPoint findTableLocation(gridPointFull* currentPostionFull, uint16_t tableDistance, int16_t tableDegrees);
 // TODO: Comment me!
 uint8_t isVisitedTable(gridPoint tablePositions[MAX_TABLES], gridPoint tableLocation);
 // TODO: Comment me!
 gridPoint calculateWall(gridPointFull firstWall, gridPointFull secondWall);
+
+
+// TO BE PUT IN POSITION.C
+// Calculates the position of all the corners
+void findCorners(gridPointFull* firstWall, gridPointFull* secondWall, gridPointFull* firstWallParralel, gridPoint corners[4]);
 
 
 // ALREADY IN OLD MAIN: Returns a 1 if given value is within +/- tolerance of target, 0 if not
@@ -69,8 +74,8 @@ uint8_t main(void) {
     printf("Have we been here? %d\n", isVisitedTable(tablePositions, findTableLocation(&currentPositionFull, 200, 45)));
 
 
-    gridPointFull firstWall = {{-3, 5}, 25};
-    gridPointFull secondWall = {{5, -6}, 295};
+    gridPointFull firstWall = {{141, 141}, 45};
+    gridPointFull secondWall = {{177, 389}, 135};
 
     gridPoint corner = calculateWall(firstWall, secondWall);
     printf("Corner Position: %d, %d\n", corner.x, corner.y);
@@ -78,6 +83,16 @@ uint8_t main(void) {
     int16_t cornerToFirstDegree = round((1 / DEG_TO_RAD) * atan2(firstWall.position.y - corner.y, firstWall.position.x -  corner.x));
     wrapAroundDegrees(&cornerToFirstDegree);
     printf("Corner to First Angle: %d\n", cornerToFirstDegree);
+
+
+    gridPointFull parralelToFirstWall = {{-71, 354}, 225};
+
+
+    gridPoint corners[4];
+    findCorners(&firstWall, &secondWall, &parralelToFirstWall, corners);
+
+
+    printf("(%d, %d), (%d, %d), (%d, %d), (%d, %d)", corners[0].x, corners[0].y, corners[1].x, corners[1].y, corners[2].x, corners[2].y, corners[3].x, corners[3].y);
 
     return 0;
 }
@@ -94,7 +109,7 @@ void wrapAroundDegrees(int16_t* degrees){
     else if (*degrees < 0)    { *degrees += 360; }
 }
 
-void updateCyBotPosition(gridPointFull* currentPositionFull, uint8_t traveledDistance, int16_t traveledDegrees) {
+void updateCyBotPosition(gridPointFull* currentPositionFull, uint16_t traveledDistance, int16_t traveledDegrees) {
 
     // Updating degrees
     (*currentPositionFull).degrees += traveledDegrees;
@@ -109,9 +124,25 @@ void updateCyBotPosition(gridPointFull* currentPositionFull, uint8_t traveledDis
 
 }
 
+// TO BE PUT IN POSITION.C
+// Calculates the position of all the corners
+void findCorners(gridPointFull* firstWall, gridPointFull* secondWall, gridPointFull* firstWallParralel, gridPoint corners[4]) {
+
+    corners[0] = calculateWall(*firstWall, *secondWall);
+    corners[1] = calculateWall(*firstWallParralel, *secondWall);
+
+    uint8_t parralelDist400 = sqrt(pow(corners[0].x - corners[1].x, 2) + pow(corners[0].y - corners[1].y, 2)) < 350;
+
+    gridPointFull tempPoint = {corners[0], (*secondWall).degrees};
+    corners[2] = findTableLocation(&tempPoint, 300 + parralelDist400 * 100 - TABLE_RADIUS, 180);
+
+    tempPoint.position = corners[1];
+    corners[3] = findTableLocation(&tempPoint, 300 + parralelDist400 * 100 - TABLE_RADIUS, 180);
+}
+
 
 // Pretends the bot moved to where the table is to get the coordinates of the table
-gridPoint findTableLocation(gridPointFull* currentPositionFull, uint8_t tableDistance, int16_t tableDegrees) {
+gridPoint findTableLocation(gridPointFull* currentPositionFull, uint16_t tableDistance, int16_t tableDegrees) {
 
     // Where the bot is
     gridPointFull currentPositionStorage = *currentPositionFull;
